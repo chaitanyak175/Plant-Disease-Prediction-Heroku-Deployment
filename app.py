@@ -6,7 +6,7 @@ from PIL import Image
 import io
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
 
 # Load your model
 model = tf.keras.models.load_model("trained_plant_disease_model.keras")
