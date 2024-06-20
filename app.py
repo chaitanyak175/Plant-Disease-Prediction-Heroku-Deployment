@@ -4,9 +4,10 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import io
+import time
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
+CORS(app)  # Enable CORS for all routes
 
 # Load your model
 model = tf.keras.models.load_model("trained_plant_disease_model.keras")
@@ -31,15 +32,18 @@ class_names = [
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part in the request'}), 400
-
-    file = request.files['file']
-
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
+    start_time = time.time()
     try:
+        if 'file' not in request.files:
+            app.logger.error('No file part in the request')
+            return jsonify({'error': 'No file part in the request'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            app.logger.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
         # Read the image
         img = Image.open(file.stream)
         img = img.resize((128, 128))  # Resize the image to match the model's expected input size
@@ -50,9 +54,13 @@ def predict():
         predictions = model.predict(img_array)
         predicted_class = class_names[np.argmax(predictions)]
 
+        end_time = time.time()
+        app.logger.info(f"Prediction completed in {end_time - start_time} seconds")
+
         return jsonify({'disease': predicted_class})
 
     except Exception as e:
+        app.logger.error(f"Error during prediction: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/')
