@@ -4,11 +4,12 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import time
+import io
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})  # Enable CORS for all routes
 
-# Load your model
+# Load your model once when the server starts
 model_loading_start_time = time.time()
 model = tf.keras.models.load_model("trained_plant_disease_model.keras")
 model_loading_end_time = time.time()
