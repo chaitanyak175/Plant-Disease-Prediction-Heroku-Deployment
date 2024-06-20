@@ -9,7 +9,10 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})  # Enable CORS for all routes
 
 # Load your model
+model_loading_start_time = time.time()
 model = tf.keras.models.load_model("trained_plant_disease_model.keras")
+model_loading_end_time = time.time()
+app.logger.info(f"Model loaded in {model_loading_end_time - model_loading_start_time} seconds")
 
 # Define the list of class names
 class_names = [
@@ -33,7 +36,6 @@ class_names = [
 def predict():
     start_time = time.time()
     app.logger.info("Received a request")
-
     try:
         if 'file' not in request.files:
             app.logger.error('No file part in the request')
@@ -47,24 +49,32 @@ def predict():
             return jsonify({'error': 'No selected file'}), 400
 
         # Read the image
-        read_start_time = time.time()
+        img_read_start_time = time.time()
         img = Image.open(file.stream)
+        img_read_end_time = time.time()
+        app.logger.info(f"Image read in {img_read_end_time - img_read_start_time} seconds")
+
+        img_resize_start_time = time.time()
         img = img.resize((128, 128))  # Resize the image to match the model's expected input size
+        img_resize_end_time = time.time()
+        app.logger.info(f"Image resized in {img_resize_end_time - img_resize_start_time} seconds")
+
+        img_array_start_time = time.time()
         img_array = np.array(img)
         img_array = np.expand_dims(img_array, axis=0)  # Create a batch
-        read_end_time = time.time()
-        app.logger.info(f"Image read and processed in {read_end_time - read_start_time} seconds")
+        img_array_end_time = time.time()
+        app.logger.info(f"Image array created in {img_array_end_time - img_array_start_time} seconds")
 
         # Make a prediction
-        predict_start_time = time.time()
+        prediction_start_time = time.time()
         predictions = model.predict(img_array)
-        predict_end_time = time.time()
-        app.logger.info(f"Prediction completed in {predict_end_time - predict_start_time} seconds")
-        
+        prediction_end_time = time.time()
+        app.logger.info(f"Prediction made in {prediction_end_time - prediction_start_time} seconds")
+
         predicted_class = class_names[np.argmax(predictions)]
 
         end_time = time.time()
-        app.logger.info(f"Total prediction process completed in {end_time - start_time} seconds")
+        app.logger.info(f"Prediction completed in {end_time - start_time} seconds")
 
         return jsonify({'disease': predicted_class})
 
