@@ -3,11 +3,10 @@ from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import io
 import time
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={r"/*": {"origins": "*"}})  # Enable CORS for all routes
 
 # Load your model
 model = tf.keras.models.load_model("trained_plant_disease_model.keras")
@@ -33,12 +32,14 @@ class_names = [
 @app.route('/predict', methods=['POST'])
 def predict():
     start_time = time.time()
+    app.logger.info("Received a request")
     try:
         if 'file' not in request.files:
             app.logger.error('No file part in the request')
             return jsonify({'error': 'No file part in the request'}), 400
 
         file = request.files['file']
+        app.logger.info(f"File received: {file.filename}")
 
         if file.filename == '':
             app.logger.error('No selected file')
