@@ -33,6 +33,7 @@ class_names = [
 def predict():
     start_time = time.time()
     app.logger.info("Received a request")
+
     try:
         if 'file' not in request.files:
             app.logger.error('No file part in the request')
@@ -46,17 +47,24 @@ def predict():
             return jsonify({'error': 'No selected file'}), 400
 
         # Read the image
+        read_start_time = time.time()
         img = Image.open(file.stream)
         img = img.resize((128, 128))  # Resize the image to match the model's expected input size
         img_array = np.array(img)
         img_array = np.expand_dims(img_array, axis=0)  # Create a batch
+        read_end_time = time.time()
+        app.logger.info(f"Image read and processed in {read_end_time - read_start_time} seconds")
 
         # Make a prediction
+        predict_start_time = time.time()
         predictions = model.predict(img_array)
+        predict_end_time = time.time()
+        app.logger.info(f"Prediction completed in {predict_end_time - predict_start_time} seconds")
+        
         predicted_class = class_names[np.argmax(predictions)]
 
         end_time = time.time()
-        app.logger.info(f"Prediction completed in {end_time - start_time} seconds")
+        app.logger.info(f"Total prediction process completed in {end_time - start_time} seconds")
 
         return jsonify({'disease': predicted_class})
 
